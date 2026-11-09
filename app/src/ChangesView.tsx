@@ -523,6 +523,8 @@ function ChangeRow({ change, field, failure, undoing, onUndo, inBatch }: ChangeR
           ? text.lifted(change.old)
           : change.field === "retirement"
             ? text.keptPlaying(change.old === 0 ? null : formatDate(dateFromNumber(change.old)))
+          : change.field === "future_transfer"
+            ? text.cancelledTransfer(change.old === 0 ? null : formatDate(dateFromNumber(change.old)))
           : change.field === "contract.job"
             ? valueChange(jobLabel(change.old), jobLabel(change.new))
             : valueChange(valueText(field, shown(change.old)), valueText(field, shown(change.new)));

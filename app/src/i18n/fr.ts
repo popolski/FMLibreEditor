@@ -618,6 +618,7 @@ export const fr: Strings = {
     injuries: "Blessures",
     bans: "Suspensions",
     retirement: "Retraite",
+    future_transfer: "Transfert prévu",
     clause: "Clause du contrat",
     "clause.amount": "Montant de la clause",
     "clause.condition": "Condition de la clause",
@@ -712,6 +713,12 @@ export const fr: Strings = {
     retirement: "Retraite",
     retires: "Prévoit de prendre sa retraite",
     noRetirement: "Le jeu n'a pas prévu sa retraite",
+    futureTransfer: "Transfert convenu",
+    futureTransferTo: (club, date) => `Rejoindra ${club} le ${date}`,
+    cancelTransfer: "Annuler le transfert",
+    cancellingTransfer: "Annulation…",
+    cancelTransferTitle:
+      "Annuler le transfert convenu pour une date ultérieure : le jeu le considère comme tombé à l'eau et il reste dans son club ; annulable dans Modifications",
     keepPlaying: "Empêcher la retraite",
     keepingPlaying: "En cours…",
     keepPlayingTitle:
@@ -1316,6 +1323,7 @@ export const fr: Strings = {
     healed: (count) => (count <= 1 ? `${count} blessure soignée` : `${format(count)} blessures soignées`),
     lifted: (count) => (count <= 1 ? `${count} suspension levée` : `${format(count)} suspensions levées`),
     keptPlaying: (date) => (date === null ? "Continuera à jouer" : `Retraite du ${date} empêchée`),
+    cancelledTransfer: (date) => (date === null ? "Transfert annulé" : `Transfert du ${date} annulé`),
     count: (total, undone) => {
       const count = changeCount(total);
       return undone === 0 ? count : `${count} · ${undone} ${undone <= 1 ? "annulée" : "annulées"}`;

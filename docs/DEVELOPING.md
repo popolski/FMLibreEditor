@@ -303,6 +303,7 @@ fmlibre-probe injuries 728                           # the current injuries of a
 fmlibre-probe heal 37055843 --heal --restore         # heal a player and list his injuries again: this writes too
 fmlibre-probe bans                                   # every player with a ban; bans <uid> for one player's
 fmlibre-probe bans 29120248 --lift --restore         # lift a player's bans and list them again: this writes too
+fmlibre-probe future-transfer 29233143 --cancel --restore   # cancel a player's agreed transfers and back: this writes too
 fmlibre-probe ties 2000138835                        # secondary nationalities and homegrown status, numbered
 fmlibre-probe tie-set 2000138835 0 --nation 765 --restore   # point tie 0 at England and back: this writes too
 fmlibre-probe teams 680                              # a club's teams: kinds, captains, players' fitness and morale
@@ -321,7 +322,7 @@ to save the results. `calibrate --scan` ignores the build profile and finds the
 arrays, the in-game date and the retirement manager the way it would on an unknown build.
 
 Only `set`, `move`, `swap`, `release`, `staff-move`, `staff-job`, `staff-sign`, `heal --heal`,
-`bans --lift`, `tie-set`, `tie-add`, `tie-remove` and `captain` write to the game. Unlike the app, the probe writes to
+`bans --lift`, `future-transfer --cancel`, `tie-set`, `tie-add`, `tie-remove` and `captain` write to the game. Unlike the app, the probe writes to
 a build without a profile too, as far as the checks allow, so that a new build can be mapped.
 - `set` changes one field after the checks above. Values are as stored:
   attributes run 0–100, or 1–20 with `--shown`.

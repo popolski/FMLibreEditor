@@ -574,6 +574,7 @@ export const tr: Strings = {
     injuries: "Sakatlıklar",
     bans: "Cezalar",
     retirement: "Emeklilik",
+    future_transfer: "Gelecek transfer",
     clause: "Sözleşme maddesi",
     "clause.amount": "Madde tutarı",
     "clause.condition": "Madde koşulu",
@@ -673,6 +674,12 @@ export const tr: Strings = {
     retirement: "Emeklilik",
     retires: "Emeklilik planı",
     noRetirement: "Oyun emekliliğini planlamamış",
+    futureTransfer: "Anlaşılan transfer",
+    futureTransferTo: (club, date) => `${date} tarihinde ${club} kulübüne katılacak`,
+    cancelTransfer: "Transferi iptal et",
+    cancellingTransfer: "İptal ediliyor…",
+    cancelTransferTitle:
+      "İleri bir tarih için anlaşılan transferi iptal eder: oyun onu suya düşmüş sayar ve oyuncu kulübünde kalır; Değişiklikler'den geri alınabilir",
     keepPlaying: "Emekli olmasını engelle",
     keepingPlaying: "Engelleniyor…",
     keepPlayingTitle:
@@ -1258,6 +1265,7 @@ export const tr: Strings = {
     healed: (count) => `${format(count)} sakatlık iyileştirildi`,
     lifted: (count) => `${format(count)} ceza kaldırıldı`,
     keptPlaying: (date) => (date === null ? "Oynamaya devam edecek" : `${date} tarihli emeklilik engellendi`),
+    cancelledTransfer: (date) => (date === null ? "Transfer iptal edildi" : `${date} tarihli transfer iptal edildi`),
     count: (total, undone) => {
       const count = changeCount(total);
       return undone === 0 ? count : `${count} · ${undone} geri alındı`;

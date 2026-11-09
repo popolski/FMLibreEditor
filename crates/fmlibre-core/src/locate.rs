@@ -184,8 +184,12 @@ pub fn holds_retirement_manager(session: &Session, rva: u64) -> bool {
 /// Every place in the plugin's writable data that points at an object of the retirement manager's class, by RVA. Its
 /// vtables are found from the class's name, which takes a second or so.
 pub fn search_retirement_manager(session: &Session) -> Vec<u64> {
-    let vtables: HashSet<u64> =
-        crate::rtti::vtables(&session.process, &session.plugin, MANAGER_CLASS).into_iter().collect();
+    search_statics(session, &crate::rtti::vtables(&session.process, &session.plugin, MANAGER_CLASS))
+}
+
+/// Every place in the plugin's writable data that points at an object with one of `vtables`, by RVA.
+pub(crate) fn search_statics(session: &Session, vtables: &[u64]) -> Vec<u64> {
+    let vtables: HashSet<u64> = vtables.iter().copied().collect();
     if vtables.is_empty() {
         return Vec::new();
     }

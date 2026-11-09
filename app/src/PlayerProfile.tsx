@@ -5,7 +5,7 @@ import { ClauseList } from "./ClauseList";
 import { CompareToggle } from "./Comparison";
 import { EditableValue, EditInput } from "./EditControls";
 import { call } from "./api";
-import { keepPlaying } from "./editing";
+import { cancelFutureTransfer, keepPlaying } from "./editing";
 import { describeError, formatDate, formatNumber, formatMoney } from "./format";
 import { ATTRIBUTE_LABELS, editText, profileText, type AttributeKey } from "./labels";
 import { MedicalGroup } from "./MedicalGroup";
@@ -31,7 +31,16 @@ import {
   WageFact,
   type RatingRow,
 } from "./ProfileParts";
-import type { ApplyReport, Concern, Contract, FmDate, LoanDetails, PlayerDetails, PlayerSummary } from "./types";
+import type {
+  ApplyReport,
+  Concern,
+  Contract,
+  FmDate,
+  FutureTransfer,
+  LoanDetails,
+  PlayerDetails,
+  PlayerSummary,
+} from "./types";
 import { ComparisonContext, type Comparison } from "./useComparison";
 import { EditorContext, useEditableField, useProfileEditing } from "./useProfileEditing";
 
@@ -538,7 +547,65 @@ function CareerGroup({ details }: { details: PlayerDetails }) {
         </div>
       </div>
       {details.retirementKnown && <RetirementPlan uid={details.uid} retires={details.retires} />}
+      {details.futureTransfers !== null && details.futureTransfers.length > 0 && (
+        <FutureTransfers uid={details.uid} transfers={details.futureTransfers} />
+      )}
     </section>
+  );
+}
+
+/**
+ * The transfers agreed for the player for a later date, with the button that cancels them: the game takes them as
+ * fallen through. Like keeping him from retiring, it asks no question; Changes undoes it.
+ */
+function FutureTransfers({ uid, transfers }: { uid: number; transfers: FutureTransfer[] }) {
+  const { editable, readOnlyNote, onEdited } = useContext(EditorContext);
+  const [cancelling, setCancelling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // The button stays busy until the profile has read the game again.
+  useEffect(() => {
+    setCancelling(false);
+  }, [transfers]);
+
+  const cancel = async () => {
+    if (cancelling) {
+      return;
+    }
+    setCancelling(true);
+    setError(null);
+    try {
+      await cancelFutureTransfer(uid);
+      onEdited();
+    } catch (e) {
+      setError(describeError(e));
+      setCancelling(false);
+    }
+  };
+
+  return (
+    <div className="clauses">
+      <div className="injuries-head">
+        <h4>{profileText.futureTransfer}</h4>
+        <button
+          type="button"
+          className="heal-toggle"
+          disabled={!editable}
+          aria-disabled={cancelling || undefined}
+          aria-busy={cancelling || undefined}
+          title={editable ? profileText.cancelTransferTitle : readOnlyNote}
+          onClick={() => void cancel()}
+        >
+          {cancelling ? profileText.cancellingTransfer : profileText.cancelTransfer}
+        </button>
+      </div>
+      {transfers.map((transfer, i) => (
+        <p key={i} className="note">
+          {profileText.futureTransferTo(transfer.club ?? "?", transfer.date ? formatDate(transfer.date) : "?")}
+        </p>
+      ))}
+      {error && <p className="banner">{error}</p>}
+    </div>
   );
 }
 

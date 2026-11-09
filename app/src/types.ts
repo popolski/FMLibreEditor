@@ -524,6 +524,11 @@ export interface PlayerDetails extends PlayerSummary {
   /** The date the game plans him to retire on; null when it has planned none (or `retirementKnown` is false). */
   retires: FmDate | null;
   /**
+   * The transfers agreed for him for a later date, which wait for their day: the club he joins and the day; null when
+   * the editor cannot find the game's offers in this version of the game.
+   */
+  futureTransfers: FutureTransfer[] | null;
+  /**
    * How many more clauses the list of his contract has room for: the game sizes it to what it holds, and the editor
    * allocates nothing, so a release clause can be added to few contracts.
    */
@@ -536,6 +541,15 @@ export interface PlayerDetails extends PlayerSummary {
  * A player's loan, as his loan contract says: the club he is on loan to, the club he belongs to, and the days it runs
  * from and to. `loan.expires` edits the day it ends; `recall_loan` makes it end on the game's date.
  */
+/** A transfer agreed for a later date. */
+export interface FutureTransfer {
+  /** The club he joins; null when it cannot be read. */
+  clubUid: number | null;
+  club: string | null;
+  /** The day he moves. */
+  date: FmDate | null;
+}
+
 export interface LoanDetails {
   /** The club he is on loan to. */
   clubUid: number | null;
@@ -694,6 +708,8 @@ export interface LoggedChange {
   // Healing (`heal_player`) is logged as a change of the player's field "injuries" from how many he had to 0, and
   // lifting his bans (`lift_bans`) as a change of his field "bans", and keeping him from retiring (`keep_playing`) as
   // a change of his field "retirement" from the date he was to retire on (a number like 20270630; 0 for none) to 0.
+  // Cancelling his transfers agreed for a later date (`cancel_future_transfer`) is logged as a change of his field
+  // "future_transfer" from the day he was to move (a number like 20280615; 0 when not known) to 0.
   /**
    * Set for a move to another club, which is logged as a change of the player's field `club` whose old and new
    * values are the clubs' UIDs: the clubs' names. A release (`release_player`) is logged the same way, with 0 for

@@ -198,6 +198,42 @@ slots filled, seven were empty, and one held a list whose end came before its be
 taken back; none held a Monza player yet. Adam Bakoune moved out of Monza to Juventus and back, with the probe and
 through the app's dialog: as no copy was the club's, none changed, and every object read as before.
 
+## Transfers agreed for a later date
+
+Read on the Steam build (26340721) on a save of 9 May 2028, whose manager runs Newcastle United, with the probe
+(`types`, `instances`, `refs`, `dump`). Nothing was changed in the game while reading.
+
+**The transfer manager.** `TRANSFER_MANAGER` is one object, which a static points at (`game_plugin.dll+0x56f3a18` on
+this build, 0x42F8 before the retirement manager's). At `+0x20` it keeps a table `(begin, end, capacity)` of pointers
+to every offer of the game: 16,621 slots, of which 7,222 were null (freed), 8,620 pointed at a `FULL_TRANSFER_OFFER`
+and the rest at offers of other kinds (`B_CLUB_MOVE_OFFER`, ...). Offers stay listed once over, in their last state.
+
+**A transfer between clubs** is a `FULL_TRANSFER_OFFER` of 0xD0 bytes:
+
+| Offset | Field | Harvey Elliott, Liverpool → Newcastle |
+| --- | --- | --- |
+| `+0x38` | the player's identity block | |
+| `+0x40`, `+0x48` | the buying club's senior team | Newcastle United |
+| `+0x50` | the selling club's senior team; null for a player whose contract runs out | Liverpool |
+| `+0x70` | a date, unset for some | 26 April 2028 |
+| `+0x74` | the day of the offer | 26 April 2028 |
+| `+0x78` | 30 days later | 26 May 2028 |
+| `+0x7C` | the day he moves | 15 June 2028 |
+| `+0x86` | `u8`: 1 at once, 2 later, 8 a player whose contract runs out | 2 |
+| `+0x8D` | `u8` state | `0x13` |
+
+The states, over the 8,620 transfers: `0x14` done (5,409 of one kind alone), `0x13` agreed and waiting for its day,
+`0x0F` turned down (Caíque's offers from Ferroviária and Brusque, while Avaí's waits at `0x13`), and `0x10` fallen
+through: Yuta Nakayama's to LA Galaxy, agreed for 26 January 2028, read `0x10` while he was still at Crvena zvezda in
+May; Marc Oliver Kempf's to Hamburg, for 1 July 2028, read `0x10` while he was at Leipzig. Loans with a permanent move
+agreed (Morato from Nottingham Forest, Kostas Tsimikas from Liverpool, both on loan at Newcastle) wait at `0x13` with
+15 June as their day too. Only the manager's table pointed at Elliott's offer, and at Frédéric Efuele's.
+
+**What the editor does.** It cancels a player's agreed transfers by setting their state to `0x10`, as the game left
+the ones that fell through, and puts `0x13` back on an undo (`future_transfer.rs`). It finds the manager's static by
+the class of what it points at, as for the retirement manager. Not yet checked: what the game does on the next days
+with a transfer cancelled this way, and whether the game's own cancelling changes more (the clubs' budgets, news).
+
 ## Still to find
 
 - Where the game keeps the fee it shows in a player's transfer history. The surest way: watch
@@ -206,4 +242,4 @@ through the app's dialog: as no copy was the club's, none changed, and every obj
 - Who owns the records and the pointer array, and their capacities. Adding a transfer means
   inserting a record in person order without allocating.
 - Where the transfer events' stream keeps its write position and its room.
-- Where agreed future transfers are kept: the agreed-deal objects above are a start.
+- What the game's own cancelling of an agreed transfer writes, beyond the offer's state.

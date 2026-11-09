@@ -6,15 +6,15 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use fmlibre_core::{
-    ArraySource, Buyer, CaptainRole, CaptainSet, Change, Clause, ClauseSet, ClubDetails, ClubFilter, ClubIndex,
-    ClubMove, ClubSummary, Coded, EditError, Entity, EntityArrays, ExportFormat, ExportHeader, Exported, FeePlan,
-    Field, FmDate, GAME_EXE, GAME_PLUGIN, GameInfo, GraphicsCounts, GraphicsIndex, HOMEGROWN_RULES, Healed, Health,
-    Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Lifted, Listed, Loan, MoveError, MovePlan, MoveTerms, Nation, NewContract,
-    NewStaffContract, Operation, Paid, Picture, Planned, PlayerDetails, PlayerFilter, PlayerIndex, PlayerOrder,
-    PlayerSummary, ROLES, RelationSet, RetirementSet, Role, SCOUT_POSITIONS, ScoutError, ScoutPosition, ScoutRequest,
-    Scouted, SearchIndex, Session, SessionError, Skipped, SquadReport, StadiumName, StadiumRename, StaffChange,
-    StaffDetails, StaffFilter, StaffIndex, StaffOrder, StaffPlan, Target, Tie, TieTarget, find_game, nations,
-    sort_players, sort_staff,
+    ArraySource, Buyer, Cancelled, CaptainRole, CaptainSet, Change, Clause, ClauseSet, ClubDetails, ClubFilter,
+    ClubIndex, ClubMove, ClubSummary, Coded, EditError, Entity, EntityArrays, ExportFormat, ExportHeader, Exported,
+    FeePlan, Field, FmDate, GAME_EXE, GAME_PLUGIN, GameInfo, GraphicsCounts, GraphicsIndex, HOMEGROWN_RULES, Healed,
+    Health, Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Lifted, Listed, Loan, MoveError, MovePlan, MoveTerms, Nation,
+    NewContract, NewStaffContract, Operation, Paid, Picture, Planned, PlayerDetails, PlayerFilter, PlayerIndex,
+    PlayerOrder, PlayerSummary, ROLES, RelationSet, RetirementSet, Role, SCOUT_POSITIONS, ScoutError, ScoutPosition,
+    ScoutRequest, Scouted, SearchIndex, Session, SessionError, Skipped, SquadReport, StadiumName, StadiumRename,
+    StaffChange, StaffDetails, StaffFilter, StaffIndex, StaffOrder, StaffPlan, Target, Tie, TieTarget, find_game,
+    nations, sort_players, sort_staff,
 };
 use fmlibre_mem::{Process, find_processes, is_current_process_elevated, list_modules};
 use serde::{Deserialize, Serialize};
@@ -947,6 +947,35 @@ impl Connection {
         logged
     }
 
+    /// Logs cancelling a player's agreed transfers just written, as a change of his `future_transfer` from the day he
+    /// was to move on (0 when it is not known) to 0.
+    fn log_cancel_transfers(&mut self, done: Cancelled) -> LoggedChange {
+        let change = Change {
+            entity: Entity::Player,
+            uid: done.player,
+            field: "future_transfer".to_owned(),
+            old: done.transfer.date.map_or(0, FmDate::to_number),
+            new: 0,
+        };
+        let logged = LoggedChange {
+            id: self.log.len() + 1,
+            at: now_ms(),
+            name: self.player_name(done.player),
+            change,
+            undone_at: None,
+            batch: None,
+            moved: None,
+            captaincy: None,
+            tie: None,
+            clause: None,
+            recall: None,
+            stadium: None,
+            undo: Some(Undo::FutureTransfer(done)),
+        };
+        self.log.push(logged.clone());
+        logged
+    }
+
     /// Logs a change to a player's ties just written, as a change of his field `tie.nationality`,
     /// `tie.trainedInNation`, `tie.trainedAtClub` or `tie.workPermit` from one nation's or club's UID to the other's
     /// (0 for none).
@@ -1355,6 +1384,7 @@ impl Connection {
             Some(Undo::Heal(healed)) => self.session.undo_heal(&healed)?,
             Some(Undo::Lift(lifted)) => self.session.undo_lift_bans(&lifted)?,
             Some(Undo::Retirement(retirement)) => self.session.undo_retirement(&retirement)?,
+            Some(Undo::FutureTransfer(cancelled)) => self.session.undo_cancel_transfers(&cancelled)?,
             Some(Undo::Tie(tie)) => self.session.undo_relation(&tie)?,
             Some(Undo::Clause(clause)) => self.session.undo_clause(&clause)?,
             Some(Undo::Staff(logged)) => {
@@ -1580,6 +1610,7 @@ enum Undo {
     Heal(Healed),
     Lift(Lifted),
     Retirement(RetirementSet),
+    FutureTransfer(Cancelled),
     Tie(RelationSet),
     Clause(ClauseSet),
     Captain(CaptainSet),
@@ -3107,6 +3138,18 @@ fn keep_playing(state: State<'_, AppState>, uid: u32) -> Result<LoggedChange, Fa
     Ok(connection.log_retirement(done))
 }
 
+/// Cancels the transfers agreed for the player `uid` for a later date: the game takes them as fallen through. Logged as
+/// one change of his `future_transfer` to none, and undone as one.
+#[tauri::command]
+fn cancel_future_transfer(state: State<'_, AppState>, uid: u32) -> Result<LoggedChange, Failure> {
+    let mut guard = state.0.lock()?;
+    let connection = guard.as_mut().ok_or_else(not_connected)?;
+    let player = connection.players.get(uid).ok_or_else(|| not_found(Entity::Player, uid))?;
+    let plan = connection.session.plan_cancel_transfers(player)?;
+    let done = connection.session.apply_cancel_transfers(&plan)?;
+    Ok(connection.log_cancel_transfers(done))
+}
+
 /// Points the tie `index` of the player `uid` at the nation `nation` or the club `club` (by UID), and gives a
 /// training the homegrown rule `rule`; what is left out stays. Logged and undone like any change.
 #[tauri::command]
@@ -3703,6 +3746,7 @@ pub fn run() {
             heal_player,
             lift_bans,
             keep_playing,
+            cancel_future_transfer,
             change_tie,
             remove_tie,
             add_tie,
