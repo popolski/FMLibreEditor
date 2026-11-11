@@ -1,6 +1,6 @@
-// The English text of the UI, and the shape every language has: `tr.ts`, `es.ts` and `id.ts` are typed `Strings`,
-// which is `typeof en`, so a key that one dictionary has and another lacks fails the build. A new language is a new
-// file like them, which `index.ts` then offers and `SettingsMenu.tsx` gives a flag.
+// The English text of the UI, and the shape every language has: `tr.ts`, `es.ts`, `id.ts` and `fr.ts` are typed
+// `Strings`, which is `typeof en`, so a key that one dictionary has and another lacks fails the build. A new language is
+// a new file like them, which `index.ts` then offers and `SettingsMenu.tsx` gives a flag.
 //
 // Keys of the game data map to the names FM uses; every other string of the panels is in `profile` (those only the
 // club panel has, in `clubProfile`), and those of the player, staff and club lists in `playerList`, `staffList` and
@@ -504,6 +504,8 @@ export const en = {
     bans: "Bans",
     // Keeping a player from retiring, which the change log keeps as a change of the date he was to retire on.
     retirement: "Retirement",
+    // Cancelling a transfer agreed for a later date, which the change log keeps as a change of the day he was to move.
+    future_transfer: "Future transfer",
     // A change to a player's contract clauses, which the change log keeps as a change of the clause's amount.
     clause: "Contract clause",
     "clause.amount": "Clause amount",
@@ -615,6 +617,13 @@ export const en = {
     retirement: "Retirement",
     retires: "Plans to retire",
     noRetirement: "The game has not planned his retirement",
+    /** A transfer agreed for a later date: the club he joins and the day, and the button that cancels it. */
+    futureTransfer: "Agreed transfer",
+    futureTransferTo: (club: string, date: string) => `Joins ${club} on ${date}`,
+    cancelTransfer: "Cancel transfer",
+    cancellingTransfer: "Cancelling…",
+    cancelTransferTitle:
+      "Cancel the transfer agreed for a later date: the game takes it as fallen through and he stays at his club; Changes can undo it",
     keepPlaying: "Prevent retirement",
     keepingPlaying: "Preventing…",
     keepPlayingTitle:
@@ -1363,6 +1372,8 @@ export const en = {
     lifted: (count: number) => (count === 1 ? "Lifted 1 ban" : `Lifted ${format(count)} bans`),
     /** What keeping a player from retiring changed: the date he was to retire on, or none when only his traits changed. */
     keptPlaying: (date: string | null) => (date === null ? "Will play on" : `Retirement on ${date} prevented`),
+    /** What cancelling a transfer agreed for a later date changed: the day he was to move, when it is known. */
+    cancelledTransfer: (date: string | null) => (date === null ? "Transfer cancelled" : `Transfer on ${date} cancelled`),
     /** The line beside the title; `undone` of the `total` changes were undone. */
     count: (total: number, undone: number) => {
       const count = changeCount(total);

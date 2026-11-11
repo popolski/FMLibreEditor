@@ -561,6 +561,7 @@ export const id: Strings = {
     injuries: "Cedera",
     bans: "Larangan bermain",
     retirement: "Pensiun",
+    future_transfer: "Transfer mendatang",
     clause: "Klausul kontrak",
     "clause.amount": "Jumlah klausul",
     "clause.condition": "Syarat klausul",
@@ -655,6 +656,12 @@ export const id: Strings = {
     retirement: "Pensiun",
     retires: "Berencana pensiun",
     noRetirement: "Game belum merencanakan pensiunnya",
+    futureTransfer: "Transfer yang disepakati",
+    futureTransferTo: (club: string, date: string) => `Bergabung dengan ${club} pada ${date}`,
+    cancelTransfer: "Batalkan transfer",
+    cancellingTransfer: "Membatalkan…",
+    cancelTransferTitle:
+      "Batalkan transfer yang disepakati untuk tanggal mendatang: game menganggapnya batal dan dia tetap di klubnya; Perubahan bisa mengurungkannya",
     keepPlaying: "Cegah pensiun",
     keepingPlaying: "Mencegah…",
     keepPlayingTitle:
@@ -1233,6 +1240,7 @@ export const id: Strings = {
     healed: (count: number) => `${format(count)} cedera disembuhkan`,
     lifted: (count: number) => `${format(count)} larangan bermain dicabut`,
     keptPlaying: (date: string | null) => (date === null ? "Akan terus bermain" : `Pensiun pada ${date} dicegah`),
+    cancelledTransfer: (date: string | null) => (date === null ? "Transfer dibatalkan" : `Transfer pada ${date} dibatalkan`),
     count: (total: number, undone: number) => {
       const count = changeCount(total);
       return undone === 0 ? count : `${count} · ${undone} diurungkan`;

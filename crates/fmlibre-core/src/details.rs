@@ -129,6 +129,9 @@ pub struct PlayerDetails {
     /// [`crate::Session::planned_retirement`]), and the date he retires on when the game has planned it.
     pub retirement_known: bool,
     pub retires: Option<FmDate>,
+    /// The transfers agreed for him that wait for their day (see [`crate::Session::future_transfers`]); `None` when
+    /// the editor cannot find the game's offers in this build.
+    pub future_transfers: Option<Vec<crate::future_transfer::FutureTransfer>>,
     /// How many more clauses the list of his contract has room for (see [`crate::Session::clause_room`]).
     pub clause_room: usize,
     /// Where he is on loan, when he is (see [`crate::Session::loan`]).
@@ -336,6 +339,7 @@ pub fn read_player_details(
         ties_grow: false,
         retirement_known: false,
         retires: None,
+        future_transfers: None,
         clause_room: 0,
         loan: None,
     }))

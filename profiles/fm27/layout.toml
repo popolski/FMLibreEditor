@@ -296,6 +296,18 @@ person = 0x00             # in an entry: u32 person id
 date = 0x0C               # in an entry: the date he retires
 player_person = 0x290     # in a player: u32, the game's id of the person (Ronaldo 0x0A30, Wass 0x0E69)
 
+# Transfers agreed for a later date (see docs/recon/fm27-transfers.md). The transfer manager (TRANSFER_MANAGER) lists
+# every offer of the game; a transfer between clubs is a FULL_TRANSFER_OFFER of 0xD0 bytes. Read on the Steam save of
+# 9 May 2028: Harvey Elliott, agreed on 26 April to join Newcastle from Liverpool on 15 June, was the only pointer to
+# his offer in the table; of 8,620 transfers it listed, 5,409 done read 0x14, and Yuta Nakayama's to LA Galaxy, agreed
+# for 26 January and never made, 0x10.
+[future_transfer]
+offers = 0x20             # in the manager: (begin, end, capacity) of pointers to the offers, null for a freed slot
+player = 0x38             # in an offer: pointer to the player's identity block
+buyer = 0x40              # pointer to the senior team of the club he joins (again at 0x48; the seller's at 0x50)
+date = 0x7C               # u32, the day he moves
+state = 0x8D              # u8: 0x13 agreed and waiting, 0x14 done, 0x10 fallen through, 0x0F turned down
+
 # What a human manager has picked for his club, laid out as on macOS (see layout-macos.toml): the match engine's
 # prepared tactics, objects whose 26 slots hold the game's person ids (a player's `player_person`), the starting
 # eleven in the order of the formation's positions, then the substitutes; an empty slot holds 0xFFFFFFFF. Each object

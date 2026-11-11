@@ -1,0 +1,151 @@
+# This fork's releases (see docs/FORK.md). Every day it looks for a new release of tozmoz/FMLibreEditor; when there is
+# one, it merges it into main, builds the Windows installer with this fork's additions, and publishes a release whose
+# latest.json installed copies of the fork update from. A run started by hand publishes a release of main as it is,
+# with tozmoz's latest release merged first if it is new.
+#
+# Versions are tozmoz's with "-fr.N" after them: 0.6.0-fr.1 is the first release of the fork on tozmoz's 0.6.0.
+#
+# Secrets of the repository:
+# - TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD: the fork's own signing key, whose public half is
+#   in app/src-tauri/tauri.fork.conf.json (tozmoz's key stays his);
+# - SYNC_TOKEN, optional: a token allowed to push changes to workflows (Contents and Workflows, read and write, on
+#   this repository). GitHub's own token may not push a merge that changes one of tozmoz's workflows.
+name: Fork release
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-release
+
+jobs:
+  sync:
+    if: github.repository != 'tozmoz/FMLibreEditor'
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.sync.outputs.build }}
+      version: ${{ steps.sync.outputs.version }}
+      upstream: ${{ steps.sync.outputs.upstream }}
+      sha: ${{ steps.sync.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
+
+      # A merge that conflicts with the fork's changes stops here: merge it by hand, then start the workflow again.
+      - name: Merge tozmoz's latest release
+        id: sync
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          tag=$(gh release view --repo tozmoz/FMLibreEditor --json tagName --jq .tagName)
+          git fetch --no-tags https://github.com/tozmoz/FMLibreEditor.git "refs/tags/$tag:refs/upstream/$tag"
+          if git merge-base --is-ancestor "refs/upstream/$tag" HEAD; then
+            if [ "$EVENT" = schedule ]; then
+              echo "main already has tozmoz's $tag."
+              echo "build=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          else
+            git merge --no-edit -m "Merge tozmoz's $tag" "refs/upstream/$tag"
+            git push origin HEAD:main
+          fi
+          base=$(node -p "require('./app/src-tauri/tauri.conf.json').version")
+          released=$(git tag -l "v$base-fr.*" | wc -l)
+          {
+            echo "build=true"
+            echo "version=$base-fr.$((released + 1))"
+            echo "upstream=$tag"
+            echo "sha=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: sync
+    if: needs.sync.outputs.build == 'true'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ needs.sync.outputs.version }}
+      UPSTREAM: ${{ needs.sync.outputs.upstream }}
+      SHA: ${{ needs.sync.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.sync.outputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The fork's version, update address and key go over tozmoz's settings, which stay as they are in
+      # tauri.conf.json so that his updates merge without conflicts.
+      - name: Build the installer
+        working-directory: app
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          npm ci
+          node -e '
+            const fs = require("fs");
+            const file = "src-tauri/tauri.fork.conf.json";
+            const config = JSON.parse(fs.readFileSync(file, "utf8"));
+            config.version = process.env.VERSION;
+            fs.writeFileSync(file, JSON.stringify(config, null, 2));
+          '
+          npx tauri build --bundles nsis --config src-tauri/tauri.fork.conf.json
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          tag="v$VERSION"
+          mkdir out
+          setup=$(ls target/release/bundle/nsis/*-setup.exe | head -1)
+          cp "$setup" out/FMLibreEditor-Setup.exe
+          cp "$setup.sig" out/FMLibreEditor-Setup.exe.sig
+          cp target/release/FMLibreEditor.exe out/FMLibreEditor.exe
+          node -e '
+            const fs = require("fs");
+            const { VERSION, REPO } = process.env;
+            const windows = {
+              signature: fs.readFileSync("out/FMLibreEditor-Setup.exe.sig", "utf8").trim(),
+              url: `https://github.com/${REPO}/releases/download/v${VERSION}/FMLibreEditor-Setup.exe`,
+            };
+            const latest = {
+              version: VERSION,
+              notes: `https://github.com/${REPO}/releases/tag/v${VERSION}`,
+              pub_date: new Date().toISOString(),
+              platforms: { "windows-x86_64-nsis": windows, "windows-x86_64": windows },
+            };
+            fs.writeFileSync("out/latest.json", JSON.stringify(latest, null, 2) + "\n");
+          '
+          cat > out/notes.md <<NOTES
+          Version du fork de [FMLibreEditor](https://github.com/tozmoz/FMLibreEditor), fondée sur la version $UPSTREAM de
+          tozmoz ([ses notes](https://github.com/tozmoz/FMLibreEditor/releases/tag/$UPSTREAM)), avec les ajouts de ce
+          fork ([docs/FORK.md](https://github.com/$REPO/blob/main/docs/FORK.md)).
+
+          - **FMLibreEditor-Setup.exe** : installe l'éditeur ; une copie installée se met à jour toute seule.
+          - **FMLibreEditor.exe** : version portable, sans installation ni mise à jour automatique.
+          NOTES
+          gh release create "$tag" out/FMLibreEditor-Setup.exe out/FMLibreEditor.exe out/latest.json \
+            --target "$SHA" --title "FMLibreEditor $VERSION" --notes-file out/notes.md

@@ -323,6 +323,7 @@ function details(player: PlayerSummary): PlayerDetails {
     clauseRoom: player.club ? clauseRoomOf(player.uid) : 0,
     retirementKnown: true,
     retires: retiresOf(player.uid),
+    futureTransfers: [],
     loan: loanOf(player),
     // Drawn last, so that the values above come out as before.
     morale: Math.round(7 + next() * 10),

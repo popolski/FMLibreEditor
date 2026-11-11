@@ -797,6 +797,7 @@ mod tests {
             ties_grow: false,
             retirement_known: false,
             retires: None,
+            future_transfers: None,
             clause_room: 0,
             loan: None,
         }

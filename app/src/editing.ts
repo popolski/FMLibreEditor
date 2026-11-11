@@ -358,6 +358,12 @@ export const liftBans = (uid: number) => call<LoggedChange>("lift_bans", { uid }
  */
 export const keepPlaying = (uid: number) => call<LoggedChange>("keep_playing", { uid });
 
+/**
+ * Cancels the transfers agreed for the player for a later date: the game takes them as fallen through. Logged as one
+ * change of his field `future_transfer` to 0, and undone as one; fails with "futureTransfer.none" when he has none.
+ */
+export const cancelFutureTransfer = (uid: number) => call<LoggedChange>("cancel_future_transfer", { uid });
+
 /** The teams of a club, the senior team first, with their players and the live values a squad screen shows. */
 export const clubSquads = (uid: number) => call<ClubTeam[]>("club_squads", { uid });
 

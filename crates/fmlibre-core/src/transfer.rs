@@ -306,6 +306,10 @@ pub enum MoveError {
     NoRetirements,
     /// Keeping a player from retiring asked for one the game has not planned to retire who already has the traits.
     NotRetiring,
+    /// The editor cannot find the game's transfer offers in this build, or they do not check out.
+    NoTransfers,
+    /// Cancelling asked for a player with no transfer agreed for a later date.
+    NoFutureTransfer,
     /// The player has no contract.
     NoContract,
     /// The contract has no clause at this place in its list.
@@ -438,6 +442,10 @@ impl fmt::Display for MoveError {
             MoveError::NotRetiring => {
                 f.write_str("the game has not planned the player's retirement, and he already means to play on")
             }
+            MoveError::NoTransfers => {
+                f.write_str("the editor cannot find the game's transfer offers in this version of the game")
+            }
+            MoveError::NoFutureTransfer => f.write_str("no transfer is agreed for the player for a later date"),
             MoveError::NoContract => f.write_str("the player has no contract"),
             MoveError::NoClause { index } => write!(f, "the contract has no clause number {index}"),
             MoveError::NotInClause { field } => write!(
@@ -519,6 +527,8 @@ impl Coded for MoveError {
             MoveError::BadName => "stadium.badName",
             MoveError::NoRetirements => "retirement.unknown",
             MoveError::NotRetiring => "retirement.none",
+            MoveError::NoTransfers => "futureTransfer.unknown",
+            MoveError::NoFutureTransfer => "futureTransfer.none",
             MoveError::NoContract => "clause.noContract",
             MoveError::NoClause { .. } => "clause.missing",
             MoveError::NotInClause { .. } => "clause.notInClause",

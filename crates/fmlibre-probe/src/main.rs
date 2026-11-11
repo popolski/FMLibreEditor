@@ -401,6 +401,16 @@ enum Command {
         #[arg(long, default_value_t = 0)]
         hold: u64,
     },
+    /// Show the transfers agreed for a player for a later date, and with --cancel cancel them in the running game.
+    FutureTransfer {
+        /// The player's UID.
+        uid: u32,
+        /// Cancel them: they read as fallen through.
+        #[arg(long)]
+        cancel: bool,
+        #[command(flatten)]
+        restore: RestoreArgs,
+    },
     /// Show a player's ties: his secondary nationalities, and the nations and clubs he was trained in.
     Ties {
         /// The player's UID.
@@ -1012,6 +1022,7 @@ fn run(cli: Cli) -> Result<()> {
                 | Command::Heal { heal: true, .. }
                 | Command::Bans { lift: true, .. }
                 | Command::Retirements { keep: true, .. }
+                | Command::FutureTransfer { cancel: true, .. }
                 | Command::ClauseSet { .. }
                 | Command::ClauseRemove { .. }
                 | Command::ClauseAdd { .. }
@@ -1134,6 +1145,9 @@ fn run(cli: Cli) -> Result<()> {
         Command::Retirements { uid, keep, restore, hold } => {
             let restore_after = restore.then_some(hold);
             retirements(&connect(process, ArraySource::ProfileFirst)?, uid, keep, restore_after)
+        }
+        Command::FutureTransfer { uid, cancel, restore } => {
+            future_transfer(&connect(process, ArraySource::ProfileFirst)?, uid, cancel, restore)
         }
         Command::Ties { uid, all } => {
             let session = connect(process, ArraySource::ProfileFirst)?;
@@ -4789,6 +4803,41 @@ fn retirements(session: &Session, uid: Option<u32>, keep: bool, restore_after: O
         }
         session.undo_retirement(&done)?;
         ensure!(show("restored")? == before, "his plan or traits are not as they were");
+        println!("  restored");
+    }
+    Ok(())
+}
+
+/// Shows the transfers agreed for the player `uid` for a later date, and with `cancel` cancels them.
+fn future_transfer(session: &Session, uid: u32, cancel: bool, restore: RestoreArgs) -> Result<()> {
+    let players = PlayerIndex::new(session.players()?);
+    let player = players.get(uid).with_context(|| format!("no player with UID {uid}"))?;
+    let show = |label: &str| -> Result<usize> {
+        let transfers = session.future_transfers(player)?;
+        println!("{} (UID {uid}) {label}: {} transfer(s) agreed for a later date", player.name, transfers.len());
+        for t in &transfers {
+            let club = t.club.as_deref().unwrap_or("?");
+            println!(
+                "  to {club} (UID {}) on {}",
+                t.club_uid.map_or("?".to_owned(), |u| u.to_string()),
+                iso_date(t.date)
+            );
+        }
+        Ok(transfers.len())
+    };
+    let before = show("now")?;
+    if !cancel {
+        return Ok(());
+    }
+    let done = session.apply_cancel_transfers(&session.plan_cancel_transfers(player)?)?;
+    ensure!(show("cancelled")? == 0, "a transfer is still agreed");
+    if restore.restore {
+        if restore.hold > 0 {
+            println!("  putting it back in {} s", restore.hold);
+            std::thread::sleep(std::time::Duration::from_secs(restore.hold));
+        }
+        session.undo_cancel_transfers(&done)?;
+        ensure!(show("restored")? == before, "the transfers are not as they were");
         println!("  restored");
     }
     Ok(())

@@ -14,6 +14,7 @@ mod details;
 mod edit;
 mod export;
 mod filter;
+mod future_transfer;
 mod game;
 mod graphics;
 mod health;
@@ -62,6 +63,7 @@ pub use filter::{
     AttributeBound, ClubFilter, PlayerFilter, PlayerOrder, PlayerSort, StaffFilter, StaffOrder, StaffSort,
     sort_players, sort_staff,
 };
+pub use future_transfer::{CancelPlan, Cancelled, FutureTransfer};
 pub use game::{GAME_EXE, GAME_PLUGIN, GameInfo, Storefront};
 pub use graphics::{GraphicsCounts, GraphicsIndex, Picture};
 pub use health::{Check, CheckResult, DateEvidence, DateFit, Health, Lock, STRUCTURE};

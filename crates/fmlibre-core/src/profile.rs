@@ -40,6 +40,9 @@ pub struct Layout {
     /// Where a player on loan keeps his loan contract; only in the layouts it has been checked in.
     #[serde(default)]
     pub loan: Option<LoanLayout>,
+    /// Transfers agreed for a later date; only in the layouts they have been checked in.
+    #[serde(default)]
+    pub future_transfer: Option<FutureTransferLayout>,
     /// How one of the game's pools of objects keeps its slots (see `object_pool.rs`); only in the layouts it has been
     /// checked in.
     #[serde(default)]
@@ -178,6 +181,21 @@ pub struct RetirementLayout {
     pub date: u64,
     /// In a player: the `u32` id the game gives the person.
     pub player_person: u64,
+}
+
+/// The transfer manager's offers (see `future_transfer.rs`): `TRANSFER_MANAGER` lists them all, and a transfer between
+/// clubs is a `FULL_TRANSFER_OFFER`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FutureTransferLayout {
+    /// In the manager: the `(begin, end, capacity)` table of pointers to the offers, null for a freed slot.
+    pub offers: u64,
+    /// In an offer: the pointer to the player's identity block, to the buying club's team, the `u32` date he moves on
+    /// and the `u8` state.
+    pub player: u64,
+    pub buyer: u64,
+    pub date: u64,
+    pub state: u64,
 }
 
 /// A stadium, which a club's senior team points at.

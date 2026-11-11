@@ -147,6 +147,11 @@ pub struct Session {
     /// The vtables of loan contracts, found by their class name the first time they are needed: none when the layout
     /// does not place loans or the game does not name that class.
     pub(crate) loan_class: OnceLock<Vec<u64>>,
+    /// The static that points at the transfer manager, by RVA, and the manager's vtable: looked for the first time
+    /// they are needed (see `future_transfer.rs`).
+    pub(crate) transfer_manager: OnceLock<Option<(u64, u64)>>,
+    /// The vtables of transfers between clubs, found by their class name the first time they are needed.
+    pub(crate) offer_class: OnceLock<Vec<u64>>,
     /// The memory the editor took in the game (see `own_memory.rs`): the region, its length and how much of it is
     /// handed out.
     pub(crate) own_memory: Mutex<Option<(u64, u64, u64)>>,
@@ -192,6 +197,8 @@ impl Session {
             retirement_place: Mutex::new(None),
             selection_class: OnceLock::new(),
             loan_class: OnceLock::new(),
+            transfer_manager: OnceLock::new(),
+            offer_class: OnceLock::new(),
             own_memory: Mutex::new(None),
             pools_found: Mutex::new(Vec::new()),
             health: Mutex::new(None),
@@ -371,6 +378,7 @@ impl Session {
         details.ties_grow = self.relations_grow(player);
         details.clause_room = self.clause_room(player).unwrap_or(0);
         details.loan = self.loan(player).unwrap_or(None);
+        details.future_transfers = self.future_transfers(player).ok();
         if let Ok(date) = self.planned_retirement(player) {
             (details.retirement_known, details.retires) = (true, date);
         }
