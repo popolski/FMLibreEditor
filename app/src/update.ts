@@ -10,11 +10,13 @@ import { check as checkForInstaller } from "@tauri-apps/plugin-updater";
 import { useCallback, useEffect, useState } from "react";
 import { call, inTauri } from "./api";
 
+// This fork publishes its own releases (see .github/workflows/fork-release.yml), which carry its additions on top of
+// tozmoz's: the app asks for those.
 /** The latest published release (drafts and pre-releases are left out by GitHub). */
-const LATEST_RELEASE = "https://api.github.com/repos/tozmoz/FMLibreEditor/releases/latest";
+const LATEST_RELEASE = "https://api.github.com/repos/popolski/FMLibreEditor/releases/latest";
 
 /** Where the releases are; the only pages the notice opens (the app may open no other, see capabilities/default.json). */
-const RELEASES_PAGE = "https://github.com/tozmoz/FMLibreEditor/releases";
+const RELEASES_PAGE = "https://github.com/popolski/FMLibreEditor/releases";
 
 /** The version the browser preview pretends to be: an old one, so that the notice can be seen there. */
 const PREVIEW_VERSION = "0.1.0";
@@ -51,12 +53,14 @@ export type UpdateState =
   | { phase: "newer"; release: Release }
   | { phase: "failed" };
 
-/** The numbers of a version ("v0.10.2" is [0, 10, 2]); anything after a hyphen, as in "0.3.0-beta", is left out. */
+/**
+ * The numbers of a version ("v0.10.2" is [0, 10, 2]), those of its pre-release too: this fork's "0.6.0-fr.2" is
+ * [0, 6, 0, 0, 2], so that it comes after "0.6.0-fr.1".
+ */
 function versionNumbers(version: string): number[] {
   return version
     .replace(/^v/i, "")
-    .split("-")[0]
-    .split(".")
+    .split(/[.-]/)
     .map((part) => Number.parseInt(part, 10) || 0);
 }
 

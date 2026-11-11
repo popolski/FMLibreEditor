@@ -1,0 +1,9 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "plugins": {
+    "updater": {
+      "pubkey": "REPLACE_WITH_THE_FORK_PUBLIC_KEY",
+      "endpoints": ["https://github.com/popolski/FMLibreEditor/releases/latest/download/latest.json"]
+    }
+  }
+}
